@@ -2,11 +2,11 @@ import sharp from 'sharp';
 import cloudinary from 'cloudinary';
 import Post from "../models/post.model.js";
 import User from '../models/user.model.js';
+import Comment from '../models/comments.model.js';
 
 const addNewPost = async (req, res) => {
     try {
         const { caption } = req.body;
-        console.log("Received caption:", caption);
         const image = req.file;
         if (!image) {
             return res.status(400).json(
@@ -39,7 +39,7 @@ const addNewPost = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found", success: false });
         }
-        await user.posts.push(newPost._id);
+        await user.post.push(newPost._id);
         await user.save();
         await newPost.populate({ path: "author", select: "-password" });
         return res.status(201).json({ message: "Post added successfully", success: true, post: newPost });
@@ -115,30 +115,50 @@ const likePost = async (req, res) => {
 
 const commentOnPost = async (req, res) => {
     try {
-        const postId = req.params.postId;
+        const { postId } = req.params;
         const userId = req.userId;
-        const { comment } = req.body;
-        const post = await Post.findById(postId);
+        const comment = req.body?.comment;
+
         if (!comment) {
-            return res.status(400).json({ message: "Comment text is required", success: false });
+            return res.status(400).json({
+                message: "Comment text is required",
+                success: false
+            });
         }
+
+        const post = await Post.findById(postId);
         if (!post) {
-            return res.status(404).json({ message: "Post not found", success: false });
+            return res.status(404).json({
+                message: "Post not found",
+                success: false
+            });
         }
+
         const newComment = await Comment.create({
             text: comment,
             author: userId,
             post: postId
-        }).populate({ path: "author", select: "-password" });
-        await post.comments.push(newComment._id);
+        });
+
+        await newComment.populate({ path: "author", select: "-password" });
+
+        post.comments.push(newComment._id);
         await post.save();
-        return res.status(201).json({ message: "Comment added successfully", success: true, comment: newComment });
+
+        return res.status(201).json({
+            message: "Comment added successfully",
+            success: true,
+            comment: newComment
+        });
 
     } catch (error) {
         console.log("Error in commentOnPost controller:", error);
-        res.status(500).json({ message: "Something went wrong while commenting on the post", success: false });
+        res.status(500).json({
+            message: "Something went wrong while commenting on the post",
+            success: false
+        });
     }
-}
+};
 
 const commentOfPost = async (req, res) => {
     try {
@@ -164,37 +184,52 @@ const commentOfPost = async (req, res) => {
 
 const deletePost = async (req, res) => {
     try {
-        const postId = req.params.postId;
+        const { postId } = req.params;
         const userId = req.userId;
+
+        // 🔍 Find post
         const post = await Post.findById(postId);
         if (!post) {
-            return res.status(404).json({ message: "Post not found", success: false });
+            return res.status(404).json({
+                message: "Post not found",
+                success: false
+            });
         }
+
+        // 🔒 Authorization check
         if (post.author.toString() !== userId) {
-            return res.status(403).json(
-                {
-                    message: "You are not authorized to delete this post",
-                    success: false
-                });
+            return res.status(403).json({
+                message: "You are not authorized to delete this post",
+                success: false
+            });
         }
+
+        // ❌ Delete post
         await Post.findByIdAndDelete(postId);
-        // remove post from the user model
+
+        // 👤 Remove post from user's posts array (SAFE)
         const user = await User.findById(userId);
-        if (user) {
-            await user.posts.pull(postId);
+        if (user?.posts) {
+            user.posts.pull(postId);
             await user.save();
         }
-        // delete all comments of the post
+
+        // 🧹 Delete all related comments
         await Comment.deleteMany({ post: postId });
-        return res.status(200).json({ message: "Post deleted successfully", success: true });
+
+        return res.status(200).json({
+            message: "Post deleted successfully",
+            success: true
+        });
+
     } catch (error) {
         console.log("Error in deletePost controller:", error);
-        res.status(500).json({
+        return res.status(500).json({
             message: "Something went wrong while deleting the post",
             success: false
         });
     }
-}
+};
 
 
 const addBookmarkPost = async (req, res) => {
