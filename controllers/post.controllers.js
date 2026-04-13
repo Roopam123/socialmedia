@@ -1,11 +1,12 @@
 import sharp from 'sharp';
 import cloudinary from 'cloudinary';
-import Post from '../models/Post.js';
-import User from '../models/User.js';
+import Post from "../models/post.model.js";
+import User from '../models/user.model.js';
 
 const addNewPost = async (req, res) => {
     try {
         const { caption } = req.body;
+        console.log("Received caption:", caption);
         const image = req.file;
         if (!image) {
             return res.status(400).json(
@@ -29,7 +30,7 @@ const addNewPost = async (req, res) => {
 
         const newPost = await Post.create({
             caption,
-            imageUrl: cloudResponse.secure_url,
+            image: cloudResponse.secure_url,
             author: authorId
         });
 
@@ -231,4 +232,4 @@ const addBookmarkPost = async (req, res) => {
 
 
 
-export { addNewPost, getAllPosts, getUserPosts, likePost, commentOnPost, commentOfPost, commentOfPost, deletePost, addBookmarkPost };
+export { addNewPost, getAllPosts, getUserPosts, likePost, commentOnPost, commentOfPost, deletePost, addBookmarkPost };
