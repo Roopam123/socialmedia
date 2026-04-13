@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import connectDB from './utils/connectDB.js';
 import userRoutes from './routes/user.route.js';
 import postRoutes from './routes/post.route.js';
+import messageRoutes from './routes/message.route.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.get('/', (req, res) => {
 // importing routes
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/posts', postRoutes);
+app.use('/api/v1/messages', messageRoutes);
 
 // start server
 app.listen(PORT, () => {
