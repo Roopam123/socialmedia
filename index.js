@@ -10,18 +10,16 @@ import messageRoutes from './routes/message.route.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5000;
 
 // Connect Database
 connectDB();
 
 // middleware
-const corsOptions = {
-    origin: 'http://localhost:5173',
+app.use(cors({
+    origin: '*',
     credentials: true,
-};
-
-app.use(cors(corsOptions));
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -40,6 +38,4 @@ app.use('/api/v1/posts', postRoutes);
 app.use('/api/v1/messages', messageRoutes);
 
 // start server
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
